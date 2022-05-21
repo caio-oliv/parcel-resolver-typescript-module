@@ -25,8 +25,8 @@ export interface ParcelFileSystem {
   // unlink(path: FilePath): Promise<void>;
   // realpath(path: FilePath): Promise<FilePath>;
   // realpathSync(path: FilePath): FilePath;
-  // exists(path: FilePath): Promise<boolean>;
-  // existsSync(path: FilePath): boolean;
+  exists(path: FilePath): Promise<boolean>;
+  existsSync(path: FilePath): boolean;
   // mkdirp(path: FilePath): Promise<void>;
   // rimraf(path: FilePath): Promise<void>;
   // ncp(source: FilePath, destination: FilePath): Promise<void>;
