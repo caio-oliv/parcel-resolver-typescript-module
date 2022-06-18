@@ -1,53 +1,30 @@
 import { Resolver } from '@parcel/plugin';
-import { PluginLogger, ResolveResult } from '@parcel/types';
-import { createMatchPath, ReadJsonSync } from 'tsconfig-paths';
+import { ResolveResult } from '@parcel/types';
 import { loadTsConfig } from './loadTsConfig';
-import { ParcelFileSystem } from './types';
+import { TypescriptModuleResolver } from './TypescriptModuleResolver';
 
-function createReadJson(fs: ParcelFileSystem, logger: PluginLogger): ReadJsonSync {
-	return function readJsonSync(path: string): any {
-		logger.info({ message: `reading json from path: ${path}` });
-
-		try {
-			const content = fs.readFileSync(path, 'utf-8');
-			return JSON.parse(content);
-		} catch (err) {
-			return;
-		}
-	}
-}
-
-function createFileExists(fs: ParcelFileSystem, logger: PluginLogger): ReadJsonSync {
-	return function fileExists(filePath: string): boolean {
-		logger.info({ message: `verifying file existence: ${filePath}` });
-
-		try {
-			return fs.existsSync(filePath);
-		} catch (err) {
-			return false;
-		}
-	}
-}
 
 export default new Resolver({
 	async resolve({ specifier, options, dependency, logger }): Promise<ResolveResult | null> {
 		const { inputFS, projectRoot } = options;
-		const { specifierType } = dependency;
+		const { specifierType, resolveFrom } = dependency;
 
-		logger.info({ message: `Resolving module (${specifierType}) "${specifier}"` });
+		if (!resolveFrom) {
+			logger.warn({ message: `Can not resolve module "${specifier}" without the from module` });
+			return null
+		}
+
+		logger.info({ message: `Resolving module (${specifierType}) "${specifier}" from "${resolveFrom}"` });
 
 		// TODO: cache tsconfig
 		const { absoluteBaseUrl, paths } = await loadTsConfig(projectRoot, inputFS);
 
-		const resolver = createMatchPath(absoluteBaseUrl, paths, ['main', 'module']);
+		const resolver = new TypescriptModuleResolver({
+			absoluteBaseUrl,
+			paths,
+		}, inputFS);
 
-		const resolved = resolver(
-			specifier,
-			createReadJson(inputFS, logger),
-			createFileExists(inputFS, logger),
-			// TODO: verify tsconfig flags before apply extensions
-			['.ts', '.tsx', '.d.ts', '.js', '.mjs', '.jsx']
-		);
+		const resolved = await resolver.resolve(specifier, resolveFrom);
 
 		if (!resolved) {
 			logger.warn({ message: `Could not resolve module "${specifier}"` });

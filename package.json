@@ -10,6 +10,7 @@
   "module": "dist/module.js",
   "scripts": {
     "build": "parcel build",
+    "tscheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
@@ -26,9 +27,6 @@
   "peerDependencies": {
     "@parcel/plugin": "^2.5.0",
     "parcel": "^2.5.0"
-  },
-  "dependencies": {
-    "tsconfig-paths": "^4.0.0"
   },
   "engines": {
     "node": ">=12",
