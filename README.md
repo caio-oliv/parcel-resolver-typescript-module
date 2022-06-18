@@ -1,4 +1,4 @@
-# parcel-resolver-tsconfig-paths
+# parcel-resolver-typescript-module
 
 A parcel resolver for typescript module resolution
 
@@ -12,7 +12,7 @@ Implemented using [tsconfig-paths](https://github.com/dividab/tsconfig-paths)
 {
 	"extends": "@parcel/config-default",
 	"resolvers": [
-		"parcel-resolver-tsconfig-paths",
+		"parcel-resolver-typescript-module",
 		"..."
 	],
 	"transformers": {
@@ -28,7 +28,7 @@ Implemented using [tsconfig-paths](https://github.com/dividab/tsconfig-paths)
 Clone and install
 
 ```sh
-git clone git@... parcel-resolver-tsconfig-paths
-cd parcel-resolver-tsconfig-paths
+git clone https://github.com/CaioOliveira793/parcel-resolver-typescript-module.git
+cd parcel-resolver-typescript-module
 pnpm install
 ```
