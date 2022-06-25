@@ -80,7 +80,7 @@ export class TypescriptModuleResolver {
 	}
 
 	private async resolveRelativePath(relativeModule: string, importerAbsolutePath: string): Promise<string | null> {
-		const module = path.join(importerAbsolutePath, relativeModule);
+		const module = path.join(importerAbsolutePath, '..', relativeModule);
 		return this.resolveLookups(module);
 	}
 
