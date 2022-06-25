@@ -1,7 +1,7 @@
 {
   "name": "parcel-resolver-typescript-module",
   "author": "Caio Oliveira",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "license": "MIT",
   "description": "",
   "keywords": [],
@@ -9,6 +9,7 @@
   "main": "dist/main.js",
   "module": "dist/module.js",
   "scripts": {
+    "clear": "rm -rf dist/* coverage/*",
     "build": "parcel build",
     "tscheck": "tsc --noEmit",
     "test": "jest",

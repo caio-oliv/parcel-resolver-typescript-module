@@ -9,23 +9,16 @@ export default new Resolver({
 		const { inputFS, projectRoot } = options;
 		const { specifierType, resolveFrom } = dependency;
 
-		if (!resolveFrom) {
-			logger.warn({ message: `Can not resolve module "${specifier}" without the from module` });
-			return null
-		}
-
 		logger.info({ message: `Resolving module (${specifierType}) "${specifier}" from "${resolveFrom}"` });
 
 		// TODO: cache tsconfig
-		const { absoluteBaseUrl, paths } = await loadTsConfig(projectRoot, inputFS);
+		const config = await loadTsConfig(projectRoot, inputFS);
 
-		const resolver = new TypescriptModuleResolver({
-			absoluteBaseUrl,
-			paths,
-		}, inputFS);
+		const resolver = new TypescriptModuleResolver(config, inputFS, {
+			verifyModuleExtension: true
+		});
 
 		const resolved = await resolver.resolve(specifier, resolveFrom);
-
 		if (!resolved) {
 			logger.warn({ message: `Could not resolve module "${specifier}"` });
 			return null;

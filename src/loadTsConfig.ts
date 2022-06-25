@@ -1,13 +1,9 @@
 import path from "path";
-import { ParcelFileSystem, Tsconfig } from "./types";
-import { TsconfigPaths } from "./resolver/TypescriptModuleResolver";
+import { FileSystem, Tsconfig } from "./types";
+import { TypescriptModuleResolverConfig } from "./resolver/TypescriptModuleResolver";
 
-export interface ConfigResult {
-	absoluteBaseUrl: string;
-	paths: TsconfigPaths;
-}
 
-export async function loadTsConfig(projectRoot: string, fs: ParcelFileSystem): Promise<ConfigResult> {
+export async function loadTsConfig(projectRoot: string, fs: FileSystem): Promise<TypescriptModuleResolverConfig> {
 	const tsConfigPath = path.join(projectRoot, "tsconfig.json");
 	const tsConfigContent = await fs.readFile(tsConfigPath, "utf-8");
 

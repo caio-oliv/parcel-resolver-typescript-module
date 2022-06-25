@@ -1,13 +1,26 @@
 import path from "path";
 
-export function moduleHasExtension(module: string): boolean {
-	const lastDotIndex = module.lastIndexOf('.');
-	if (lastDotIndex === -1) return false;
 
-	const dotFromLastDirEntry = module.indexOf(path.sep, lastDotIndex) === -1;
-	return dotFromLastDirEntry;
+/**
+ * Verify if a module has extension
+ *
+ * @param module a javascript module (ESM)
+ * @returns a boolean for the extension presence
+ *
+ * ignores the full stop (.dot) as the first character of the last directory entry
+ *
+ * @example
+ * ```
+ * moduleHasExtension('.env') === false;
+ * moduleHasExtension('config/.env') === false;
+ * ```
+ */
+export function moduleHasExtension(module: string): boolean {
+	const lastDirEntry = module.lastIndexOf(path.sep);
+	const lastDotIndex = module.lastIndexOf('.');
+	return lastDotIndex > 0 && lastDotIndex > lastDirEntry + 1;
 }
 
-export function nonRelativeModule(module: string): boolean {
+export function relativeModule(module: string): boolean {
 	return module.startsWith('.');
 }

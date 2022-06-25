@@ -1,12 +1,13 @@
 import path from "path";
 import { loadPackageJson, PackageJson } from "../packageJsonLoader";
 import { FileSystem } from "../types";
-import { moduleHasExtension, nonRelativeModule } from "./utils";
+import { defaultFlags, mergeFlags, TypescriptModuleResolverFlags } from "./flags";
+import { moduleHasExtension, relativeModule } from "./utils";
 
 
 export type TsconfigPaths = Record<string, string[]>;
 
-export interface PathAlias {
+interface PathAlias {
 	prefix: string;
 	absolutePaths: string[]
 }
@@ -32,15 +33,9 @@ export interface TypescriptModuleResolverConfig {
 	paths?: TsconfigPaths;
 }
 
-export enum TypescriptModuleResolverErrorType {
-	PARSE_PACKAGE_JSON,
-}
+const EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
 
-export class ParsePackageJsonResolverError extends Error {
-	public type = TypescriptModuleResolverErrorType.PARSE_PACKAGE_JSON;
-}
-
-// TODO: implement node_modules resoluution jumping up directories
+// TODO: implement node_modules resolution jumping up directories
 // https://www.typescriptlang.org/docs/handbook/module-resolution.html#how-nodejs-resolves-modules
 // https://nodejs.org/api/modules.html#modules_loading_from_node_modules_folders
 
@@ -48,13 +43,21 @@ export class TypescriptModuleResolver {
 	private readonly fs: FileSystem;
 	private readonly absoluteBaseUrl: string;
 	private readonly paths: TsconfigPaths;
-
 	private readonly resolvedAbsolutePathsMap: PathAlias[];
+	private readonly extensions: string[];
+	private readonly flags: TypescriptModuleResolverFlags;
 
-	constructor(options: TypescriptModuleResolverConfig, fileSystem: FileSystem) {
+	constructor(
+		config: TypescriptModuleResolverConfig,
+		fileSystem: FileSystem,
+		flags: Partial<TypescriptModuleResolverFlags> = {},
+		extensions: string[] = EXTENSIONS,
+	) {
 		this.fs = fileSystem;
-		this.absoluteBaseUrl = options.absoluteBaseUrl;
-		this.paths = options.paths ?? {};
+		this.absoluteBaseUrl = config.absoluteBaseUrl;
+		this.paths = config.paths ?? {};
+		this.extensions = extensions;
+		this.flags = mergeFlags(defaultFlags(), flags);
 
 		this.resolvedAbsolutePathsMap = [];
 		const regex = /\*$/;
@@ -71,20 +74,22 @@ export class TypescriptModuleResolver {
 		}
 	}
 
-	public async resolve(module: string, importerAbsolutePath: string): Promise<string | null> {
-		if (nonRelativeModule(module)) {
-			return this.resolveRelativePath(module, importerAbsolutePath);
-		} else {
-			return this.resolveAbsolutePath(module);
+	public async resolve(module: string, importerAbsolutePath?: string | null): Promise<string | null> {
+		if (relativeModule(module)) {
+			if (!importerAbsolutePath) return null;
+
+			return this.resolveRelativeModule(module, importerAbsolutePath);
 		}
+
+		return this.resolveAbsoluteModule(module);
 	}
 
-	private async resolveRelativePath(relativeModule: string, importerAbsolutePath: string): Promise<string | null> {
+	private async resolveRelativeModule(relativeModule: string, importerAbsolutePath: string): Promise<string | null> {
 		const module = path.join(importerAbsolutePath, '..', relativeModule);
 		return this.resolveLookups(module);
 	}
 
-	private async resolveAbsolutePath(absoluteModule: string): Promise<string | null> {
+	private async resolveAbsoluteModule(absoluteModule: string): Promise<string | null> {
 		for (const { prefix, absolutePaths } of this.resolvedAbsolutePathsMap) {
 			if (!absoluteModule.startsWith(prefix)) continue;
 
@@ -122,16 +127,14 @@ export class TypescriptModuleResolver {
 	}
 
 	private async verifyExtensions(module: string): Promise<string | null> {
-		// check if a module already has an extension is not part of the typescript module resolution
-		// Some project with absolute imports:
-		// import { app } from 'app.ts';
-		// TODO: control this feature with a flag and disable by default
-		if (moduleHasExtension(module)) {
-			const fileExists = await this.fs.exists(module);
-			if (fileExists) return module;
+		if (this.flags.verifyModuleExtension) {
+			if (moduleHasExtension(module)) {
+				const fileExists = await this.fs.exists(module);
+				if (fileExists) return module;
+			}
 		}
 
-		for (const extension of TypescriptModuleResolver.fileExtensions) {
+		for (const extension of this.extensions) {
 			const filePath = module + extension;
 			const fileExists = await this.fs.exists(filePath);
 			if (fileExists) return filePath;
@@ -145,8 +148,5 @@ export class TypescriptModuleResolver {
 		if (packageObj.main) return packageObj.main;
 		return null;
 	}
-
-
-	private static readonly fileExtensions = ['.ts', '.tsx', '.d.ts'];
 
 }
