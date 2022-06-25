@@ -32,9 +32,9 @@ export default new Resolver({
 		};
 
 		// TODO: cache resolved modules
-		logger.info({ message: `Module "${specifier}" resolved: ${resolved + '.ts'}` });
+		logger.info({ message: `Module "${specifier}" resolved: ${resolved}` });
 		return {
-			filePath: resolved + '.ts',
+			filePath: resolved,
 			invalidateOnFileChange: [resolved],
 		};
 	},

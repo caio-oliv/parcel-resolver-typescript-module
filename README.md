@@ -2,8 +2,6 @@
 
 A parcel resolver for typescript module resolution
 
-Implemented using [tsconfig-paths](https://github.com/dividab/tsconfig-paths)
-
 [typescript module resolution reference](https://www.typescriptlang.org/docs/handbook/module-resolution.html)
 
 ## Usage
