@@ -3,8 +3,7 @@ export type Encoding = "hex" | "utf8" | "utf-8" | "ascii" | "binary" | "base64" 
 
 export interface FileSystem {
   exists(filePath: string): Promise<boolean>;
-  readFile(filePath: string): Promise<Buffer>;
-  readFile(filePath: string, encoding: Encoding): Promise<string>;
+  readFile(filePath: string, encoding?: Encoding): Promise<string>;
 }
 
 export interface ParcelFileSystem {

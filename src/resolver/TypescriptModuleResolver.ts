@@ -1,6 +1,7 @@
 import path from "path";
-import { loadPackageJson, PackageJson } from "./packageJsonLoader";
-import { FileSystem } from "./types";
+import { loadPackageJson, PackageJson } from "../packageJsonLoader";
+import { FileSystem } from "../types";
+import { moduleHasExtension, nonRelativeModule } from "./utils";
 
 
 export type TsconfigPaths = Record<string, string[]>;
@@ -71,10 +72,10 @@ export class TypescriptModuleResolver {
 	}
 
 	public async resolve(module: string, importerAbsolutePath: string): Promise<string | null> {
-		if (path.isAbsolute(module)) {
-			return this.resolveAbsolutePath(module);
-		} else {
+		if (nonRelativeModule(module)) {
 			return this.resolveRelativePath(module, importerAbsolutePath);
+		} else {
+			return this.resolveAbsolutePath(module);
 		}
 	}
 
@@ -94,6 +95,10 @@ export class TypescriptModuleResolver {
 				if (filePath) return filePath;
 			}
 		}
+
+		const absoluteModuleFromBaseUrl = path.join(this.absoluteBaseUrl, absoluteModule);
+		const filePath = await this.resolveLookups(absoluteModuleFromBaseUrl);
+		if (filePath) return filePath;
 
 		return null;
 	}
@@ -117,12 +122,19 @@ export class TypescriptModuleResolver {
 	}
 
 	private async verifyExtensions(module: string): Promise<string | null> {
+		// check if a module already has an extension is not part of the typescript module resolution
+		// Some project with absolute imports:
+		// import { app } from 'app.ts';
+		// TODO: control this feature with a flag and disable by default
+		if (moduleHasExtension(module)) {
+			const fileExists = await this.fs.exists(module);
+			if (fileExists) return module;
+		}
+
 		for (const extension of TypescriptModuleResolver.fileExtensions) {
 			const filePath = module + extension;
 			const fileExists = await this.fs.exists(filePath);
-			if (fileExists) {
-				return filePath;
-			}
+			if (fileExists) return filePath;
 		}
 		return null;
 	}

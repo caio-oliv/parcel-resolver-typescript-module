@@ -1,7 +1,7 @@
 import { Resolver } from '@parcel/plugin';
 import { ResolveResult } from '@parcel/types';
 import { loadTsConfig } from './loadTsConfig';
-import { TypescriptModuleResolver } from './TypescriptModuleResolver';
+import { TypescriptModuleResolver } from './resolver/TypescriptModuleResolver';
 
 
 export default new Resolver({
