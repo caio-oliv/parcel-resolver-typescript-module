@@ -7,10 +7,13 @@ export interface FileSystem {
 }
 
 export interface Tsconfig {
+  extends?: string;
   compilerOptions?: {
     baseUrl?: string;
     paths?: {
       [key: string]: Array<string>;
     };
   };
+  exclude?: string[];
+  include?: string[];
 }

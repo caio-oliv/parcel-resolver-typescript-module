@@ -1,10 +1,25 @@
 # parcel-resolver-typescript-module
 
-A parcel resolver for typescript module resolution
+Parcel resolver for [typescript modules](https://www.typescriptlang.org/docs/handbook/module-resolution.html)
 
-[typescript module resolution reference](https://www.typescriptlang.org/docs/handbook/module-resolution.html)
+## Support
+
+- [x] [baseUrl](https://www.typescriptlang.org/docs/handbook/module-resolution.html#base-url)
+- [x] [pathMapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#base-url)
+- [ ] node_modules
+- [ ] [URL schemes](https://parceljs.org/features/dependency-resolution/#url-schemes)
 
 ## Usage
+
+Install as development dependency:
+
+- `pnpm install --save-dev parcel-resolver-typescript-module`
+- `npm install --save-dev parcel-resolver-typescript-module`
+- `yarn add --dev parcel-resolver-typescript-module`
+
+> `parcel@^2` and `@parcel/plugin` packages must be installed.
+
+Add the `parcel-resolver-typescript-module` in the resolver list of your `.parcelrc` configuration file:
 
 ```json
 {
@@ -21,12 +36,12 @@ A parcel resolver for typescript module resolution
 }
 ```
 
+**Note:** since the resolver's order is sequential, use this before parcel default resolver `"..."`.
+
 ## Development
 
-Clone and install
+Clone this repo and run `pnpm install`.
 
-```sh
-git clone https://github.com/CaioOliveira793/parcel-resolver-typescript-module.git
-cd parcel-resolver-typescript-module
-pnpm install
-```
+Run `pnpm run test` for the test suite.
+
+To use a local build in a project, run `pnpm link --global` to create a global link in your machine and run `pnpm link --global parcel-resolver-typescript-module` inside your project. See [pnpm link](https://pnpm.io/cli/link) for more details.

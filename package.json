@@ -1,10 +1,23 @@
 {
   "name": "parcel-resolver-typescript-module",
   "author": "Caio Oliveira",
-  "version": "0.1.4",
+  "description": "Parcel resolver for typescript modules",
+  "keywords": [
+    "parcel",
+    "typescript",
+    "module",
+    "resolver",
+    "tsconfig",
+    "baseurl",
+    "paths"
+  ],
   "license": "MIT",
-  "description": "",
-  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CaioOliveira793/parcel-resolver-typescript-module"
+  },
+  "version": "0.1.5",
+  "type": "module",
   "source": "src/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
@@ -26,9 +39,13 @@
     "@types/node": "^17.0.35",
     "jest": "^28.1.1",
     "parcel": "^2.5.0",
+    "parcel-resolver-typescript-module": "^0.1.4",
     "ts-jest": "^28.0.5",
     "ts-node": "^10.8.1",
     "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "deepmerge": "^4.2.2"
   },
   "peerDependencies": {
     "@parcel/plugin": "^2.5.0",

@@ -1,6 +1,6 @@
-import path from "path";
-import { loadPackageJson, PackageJson } from "../packageJsonLoader";
-import { FileSystem } from "../types";
+import path from "node:path";
+import { loadPackageJson, PackageJson } from "packageJsonLoader";
+import { FileSystem } from "types";
 import { defaultFlags, mergeFlags, TypescriptModuleResolverFlags } from "./flags";
 import { moduleHasExtension, relativeModule } from "./utils";
 

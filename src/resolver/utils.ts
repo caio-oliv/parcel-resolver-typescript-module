@@ -1,4 +1,5 @@
 import path from "path";
+import { TypescriptModuleResolverConfig } from "./TypescriptModuleResolver";
 
 
 /**
@@ -23,4 +24,15 @@ export function moduleHasExtension(module: string): boolean {
 
 export function relativeModule(module: string): boolean {
 	return module.startsWith('.');
+}
+
+export function createTsModuleResolverConfig(
+	projectRoot: string,
+	baseUrl: string = '',
+	paths: Record<string, string[]> = {}
+): TypescriptModuleResolverConfig {
+	return {
+		absoluteBaseUrl: path.join(projectRoot, baseUrl),
+		paths
+	};
 }
