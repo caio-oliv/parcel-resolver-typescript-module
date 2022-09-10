@@ -1,15 +1,15 @@
 import deepmerge from "deepmerge";
-import path from "node:path";
+import { join as joinpath, dirname, relative as relativepath } from 'node:path';
 import { FileSystem, Tsconfig } from "types";
 
 
 export async function readTsconfig(projectRoot: string, tsconfigFilename: string, fs: FileSystem): Promise<Tsconfig> {
-	const tsconfigPath = path.join(projectRoot, tsconfigFilename);
+	const tsconfigPath = joinpath(projectRoot, tsconfigFilename);
 	let tsconfig = await loadAndParse(tsconfigPath, fs);
 
 	let lastExtendedConfig = tsconfig.extends;
 	while (lastExtendedConfig) {
-		const baseTsconfigPath = path.join(tsconfigPath, '..', lastExtendedConfig);
+		const baseTsconfigPath = joinpath(tsconfigPath, '..', lastExtendedConfig);
 		const baseTsconfig = await loadAndParse(baseTsconfigPath, fs);
 		updateBaseUrl(baseTsconfig, baseTsconfigPath, lastExtendedConfig);
 		lastExtendedConfig = baseTsconfig.extends;
@@ -22,6 +22,7 @@ export async function readTsconfig(projectRoot: string, tsconfigFilename: string
 async function loadAndParse(tsconfigPath: string, fs: FileSystem): Promise<Tsconfig> {
 	const tsConfigContent = await fs.readFile(tsconfigPath, 'utf8');
 
+	// TODO: catch parsing error to map into a more expressive error mesage
 	const tsconfig: Tsconfig = JSON.parse(tsConfigContent) ?? {};
 	return tsconfig;
 }
@@ -37,10 +38,10 @@ function updateBaseUrl(baseConfig: Tsconfig, baseConfigPath: string, prevConfigP
 	// baseUrl should be interpreted as relative to the base tsconfig,
 	// but we need to update it so it is relative to the original tsconfig being loaded
 	if (baseConfig?.compilerOptions?.baseUrl) {
-		const extendsDir = path.dirname(prevConfigPath);
-		baseConfig.compilerOptions.baseUrl = path.relative(
-			path.dirname(baseConfigPath),
-			path.join(extendsDir, baseConfig.compilerOptions.baseUrl),
+		const extendsDir = dirname(prevConfigPath);
+		baseConfig.compilerOptions.baseUrl = relativepath(
+			dirname(baseConfigPath),
+			joinpath(extendsDir, baseConfig.compilerOptions.baseUrl),
 		);
 		return baseConfig.compilerOptions.baseUrl;
 	}
