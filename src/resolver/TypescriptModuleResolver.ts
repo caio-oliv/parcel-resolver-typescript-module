@@ -1,16 +1,10 @@
 import path from "node:path";
 import { loadPackageJson, PackageJson } from "packageJsonLoader";
 import { FileSystem } from "types";
-import { defaultFlags, mergeFlags, TypescriptModuleResolverFlags } from "./flags";
 import { moduleHasExtension, relativeModule } from "./utils";
 
 
 export type TsconfigPaths = Record<string, string[]>;
-
-interface PathAlias {
-	prefix: string;
-	absolutePaths: string[]
-}
 
 export interface TypescriptModuleResolverConfig {
 	/**
@@ -33,7 +27,25 @@ export interface TypescriptModuleResolverConfig {
 	paths?: TsconfigPaths;
 }
 
+export interface TypescriptModuleResolverFlags {
+	/**
+	 * Verifies if a module already has extension before matching with the resolver specified extensions.
+	 */
+	verifyModuleExtension: boolean;
+}
+
+interface PathAlias {
+	prefix: string;
+	absolutePaths: string[]
+}
+
+const DEFAULT_FLAGS: TypescriptModuleResolverFlags = {
+	verifyModuleExtension: false
+};
+
 const EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
+
+const PATH_MAPPING_EXTENSION_REGEX = /\*$/
 
 // TODO: implement node_modules resolution jumping up directories
 // https://www.typescriptlang.org/docs/handbook/module-resolution.html#how-nodejs-resolves-modules
@@ -57,18 +69,20 @@ export class TypescriptModuleResolver {
 		this.absoluteBaseUrl = config.absoluteBaseUrl;
 		this.paths = config.paths ?? {};
 		this.extensions = extensions;
-		this.flags = mergeFlags(defaultFlags(), flags);
+		this.flags = { ...DEFAULT_FLAGS, ...flags };
 
 		this.resolvedAbsolutePathsMap = [];
-		const regex = /\*$/;
 		for (const pathAlias in this.paths) {
 			const reolvedPaths = [];
 			for (const pathEntry of this.paths[pathAlias]) {
-				reolvedPaths.push(path.join(this.absoluteBaseUrl, pathEntry.replace(regex, '')));
+				reolvedPaths.push(path.join(
+					this.absoluteBaseUrl,
+					pathEntry.replace(PATH_MAPPING_EXTENSION_REGEX, '')
+				));
 			}
 
 			this.resolvedAbsolutePathsMap.push({
-				prefix: pathAlias.replace(regex, ''),
+				prefix: pathAlias.replace(PATH_MAPPING_EXTENSION_REGEX, ''),
 				absolutePaths: reolvedPaths
 			});
 		}

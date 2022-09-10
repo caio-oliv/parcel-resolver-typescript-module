@@ -17,7 +17,7 @@ describe('TypescriptModuleResolver basic', () => {
 	const fsMock = new FileSystemMock(new Map([
 		[fakePath('src/main.ts'), null],
 		[fakePath('src/config/env.ts'), null],
-		[fakePath('src/config/PageNotFount.tsx'), null],
+		[fakePath('src/config/PageNotFound.tsx'), null],
 		[fakePath('src/pathMapping/nested/useCases/CreateUser.ts'), null],
 		[fakePath('src/staticPathMapping/nested/static.ts'), null],
 		[fakePath('src/staticPathMapping/withExtension.ts'), null],
@@ -44,7 +44,7 @@ describe('TypescriptModuleResolver basic', () => {
 		await assertResolver(
 			resolver,
 			fakePath('src/main.ts'),
-			'./config/PageNotFount.tsx',
+			'./config/PageNotFound.tsx',
 			null,
 		);
 	});
@@ -53,7 +53,7 @@ describe('TypescriptModuleResolver basic', () => {
 		await assertResolver(
 			resolver,
 			fakePath('src/main.ts'),
-			'config/PageNotFount.tsx',
+			'config/PageNotFound.tsx',
 			null
 		);
 	});
@@ -99,8 +99,8 @@ describe('TypescriptModuleResolver basic', () => {
 		await assertResolver(
 			resolver,
 			fakePath('src/main.ts'),
-			'./config/PageNotFount',
-			fakePath('src/config/PageNotFount.tsx')
+			'./config/PageNotFound',
+			fakePath('src/config/PageNotFound.tsx')
 		);
 	});
 
@@ -117,8 +117,8 @@ describe('TypescriptModuleResolver basic', () => {
 		await assertResolver(
 			resolver,
 			fakePath('src/main.ts'),
-			'config/PageNotFount',
-			fakePath('src/config/PageNotFount.tsx')
+			'config/PageNotFound',
+			fakePath('src/config/PageNotFound.tsx')
 		);
 	});
 
@@ -133,8 +133,6 @@ describe('TypescriptModuleResolver basic', () => {
 
 });
 
-// TEST: package json, flags, custom extension and node_modules
-
 describe('TypescriptModuleResolver absolute modules', () => {
 	const fsMock = new FileSystemMock(new Map([
 		[fakePath('src/main.ts'), null],
@@ -143,7 +141,7 @@ describe('TypescriptModuleResolver absolute modules', () => {
 		[fakePath('src/config/database/sqlite.ts'), null],
 		[fakePath('src/config/cloud/aws.ts'), null],
 		[fakePath('src/config/env.ts'), null],
-		[fakePath('src/config/PageNotFount.tsx'), null],
+		[fakePath('src/config/PageNotFound.tsx'), null],
 		[fakePath('src/modules/auth/module.ts'), null],
 		[fakePath('src/modules/auth/domain/entity/User.ts'), null],
 		[fakePath('src/modules/auth/infra/repositories/UserRepository.ts'), null],
@@ -155,19 +153,31 @@ describe('TypescriptModuleResolver absolute modules', () => {
 		paths: {
 			'@config/*': ['config/*', 'config/database/*'],
 			'@auth/*': ['modules/auth/*'],
-			'@env': ['config/env.ts']
 		},
 	}, fsMock);
 
 	it('resolve module from path mapping', async () => {
-		{
-			const modulePath = await resolver.resolve('@config/postgres', fakePath('src/main.ts'));
-			expect(modulePath).toBe(fakePath('src/config/database/postgres.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve('@config/database/postgres', fakePath('src/app.ts'));
-			expect(modulePath).toBe(fakePath('src/config/database/postgres.ts'));
-		}
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'@config/postgres',
+			fakePath('src/config/database/postgres.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/app.ts'),
+			'@config/database/postgres',
+			fakePath('src/config/database/postgres.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'@config/env/not_exists',
+			null
+		);
+
 		{
 			const modulePath = await resolver.resolve('@config/database/sqlite', fakePath('src/app.ts'));
 			expect(modulePath).toBe(fakePath('src/config/database/sqlite.ts'));
@@ -213,10 +223,6 @@ describe('TypescriptModuleResolver absolute modules', () => {
 			);
 			expect(modulePath).toBe(fakePath('src/config/database/postgres.ts'));
 		}
-		{
-			const modulePath = await resolver.resolve('@config/env/not_exists', fakePath('src/main.ts'));
-			expect(modulePath).toBe(null);
-		}
 	});
 
 });
@@ -233,7 +239,6 @@ describe('TypescriptModuleResolver relative modules', () => {
 
 	const resolver = new TypescriptModuleResolver({
 		absoluteBaseUrl: fakePath(''),
-		paths: {},
 	}, fsMock);
 
 	it('resolve relative modules', async () => {
@@ -267,3 +272,128 @@ describe('TypescriptModuleResolver relative modules', () => {
 	});
 
 });
+
+describe('TypescriptModuleResolver package.json', () => {
+
+	const fsMock = new FileSystemMock(new Map([
+		[fakePath('package/front/main.ts'), null],
+		[fakePath('package/front/app.ts'), null],
+
+		[fakePath('package/back/main.ts'), null],
+		[fakePath('package/back/dist/types.d.ts'), null],
+		[fakePath('package/back/dist/module.js'), null],
+		[fakePath('package/back/dist/main.js'), null],
+		[fakePath('package/back/package.json'), Buffer.from(JSON.stringify({
+			types: 'dist/types.d.ts',
+			module: 'dist/module.js',
+			main: 'dist/main.js',
+		}))],
+
+		[fakePath('package/shared/types.ts'), null],
+		[fakePath('package/shared/dist/module.js'), null],
+		[fakePath('package/shared/dist/main.js'), null],
+		[fakePath('package/shared/package.json'), Buffer.from(JSON.stringify({
+			module: 'dist/module.js',
+			main: 'dist/main.js',
+		}))],
+
+		[fakePath('package/common/dist/main.js'), null],
+		[fakePath('package/common/package.json'), Buffer.from(JSON.stringify({
+			main: 'dist/main.js',
+		}))],
+
+		[fakePath('package/broken/package.json'), Buffer.from(JSON.stringify({
+			name: 'package with no export'
+		}))],
+	]));
+
+	const resolver = new TypescriptModuleResolver({
+		absoluteBaseUrl: fakePath('package'),
+		paths: {
+			'@shared/*': ['shared/*'],
+		},
+	}, fsMock);
+
+	it('resolve module in types property from package.json', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('package/front/app.ts'),
+			'back',
+			fakePath('package/back/dist/types.d.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('package/front/app.ts'),
+			'../back',
+			fakePath('package/back/dist/types.d.ts')
+		);
+	});
+
+	it('fallback to module property when types in shared package is not found', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('package/front/app.ts'),
+			'shared',
+			fakePath('package/shared/dist/module.js')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('package/front/main.ts'),
+			'../shared',
+			fakePath('package/shared/dist/module.js')
+		);
+	});
+
+	it('resolve module in shared package', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('package/back/main.ts'),
+			'shared/types',
+			fakePath('package/shared/types.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('package/back/main.ts'),
+			'@shared/types',
+			fakePath('package/shared/types.ts')
+		);
+	})
+
+	it('fallback to main property when module in common package is not found', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('package/back/main.ts'),
+			'common',
+			fakePath('package/common/dist/main.js')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('package/back/main.ts'),
+			'../common',
+			fakePath('package/common/dist/main.js')
+		);
+	});
+
+	it('not resolve broken package', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('package/front/main.ts'),
+			'broken',
+			null
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('package/front/main.ts'),
+			'../broken',
+			null
+		);
+	})
+
+});
+
+// TEST: flags, custom extension and node_modules

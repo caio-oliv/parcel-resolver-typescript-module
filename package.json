@@ -20,6 +20,7 @@
   "source": "src/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
+  "packageManager": "pnpm@7.9.0",
   "scripts": {
     "clear": "rm -rf dist/* coverage/*",
     "build": "parcel build",

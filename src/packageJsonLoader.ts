@@ -1,7 +1,10 @@
 import { FileSystem } from "./types";
 
 
+export type PackageType = 'commonjs' | 'module';
+
 export interface PackageJson {
+	type?: PackageType;
 	types?: string;
 	main?: string;
 	module?: string;
