@@ -22,9 +22,12 @@ export async function readTsconfig(projectRoot: string, tsconfigFilename: string
 async function loadAndParse(tsconfigPath: string, fs: FileSystem): Promise<Tsconfig> {
 	const tsConfigContent = await fs.readFile(tsconfigPath, 'utf8');
 
-	// TODO: catch parsing error to map into a more expressive error mesage
-	const tsconfig: Tsconfig = JSON.parse(tsConfigContent) ?? {};
-	return tsconfig;
+	try {
+		const tsconfig: Tsconfig = JSON.parse(tsConfigContent) ?? {};
+		return tsconfig;
+	} catch (err) {
+		throw new TsConfigError(TsConfigErrorKind.InvalidJson, err);
+	}
 }
 
 /**
@@ -44,5 +47,20 @@ function updateBaseUrl(baseConfig: Tsconfig, baseConfigPath: string, prevConfigP
 			joinpath(extendsDir, baseConfig.compilerOptions.baseUrl),
 		);
 		return baseConfig.compilerOptions.baseUrl;
+	}
+}
+
+export enum TsConfigErrorKind {
+	InvalidJson = 'invalid_json',
+}
+
+export class TsConfigError extends Error {
+	public readonly kind: TsConfigErrorKind;
+	public readonly base: unknown | null;
+
+	constructor(kind: TsConfigErrorKind, base?: unknown) {
+		super(`Ts config error ${kind}`);
+		this.kind = kind;
+		this.base = base ?? null;
 	}
 }
