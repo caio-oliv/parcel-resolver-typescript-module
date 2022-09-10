@@ -1,10 +1,19 @@
-import path from "node:path";
+import { join as joinpath } from "node:path";
 import { loadPackageJson, PackageJson } from "packageJsonLoader";
 import { FileSystem } from "types";
 import { moduleHasExtension, relativeModule } from "./utils";
 
 
 export type TsconfigPaths = Record<string, string[]>;
+
+export interface TypescriptModuleResolverFlags {
+	/**
+	 * Verifies if a module already has extension before matching with the resolver specified extensions.
+	 *
+	 * @default false
+	 */
+	verifyModuleExtension: boolean;
+}
 
 export interface TypescriptModuleResolverConfig {
 	/**
@@ -25,13 +34,20 @@ export interface TypescriptModuleResolverConfig {
 	 * `paths` entry of tsconfig file.
 	 */
 	paths?: TsconfigPaths;
-}
 
-export interface TypescriptModuleResolverFlags {
 	/**
-	 * Verifies if a module already has extension before matching with the resolver specified extensions.
+	 * Extensions used to search modules
+	 *
+	 * @default
+	 * ['.ts', '.tsx', '.d.ts']
 	 */
-	verifyModuleExtension: boolean;
+	extensions?: string[];
+
+	/** Custom flags to modify resolver behaviour */
+	flags?: TypescriptModuleResolverFlags;
+
+	/** Resolver file system */
+	fileSystem: FileSystem,
 }
 
 interface PathAlias {
@@ -43,7 +59,7 @@ const DEFAULT_FLAGS: TypescriptModuleResolverFlags = {
 	verifyModuleExtension: false
 };
 
-const EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
+const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
 
 const PATH_MAPPING_EXTENSION_REGEX = /\*$/
 
@@ -59,23 +75,18 @@ export class TypescriptModuleResolver {
 	private readonly extensions: string[];
 	private readonly flags: TypescriptModuleResolverFlags;
 
-	constructor(
-		config: TypescriptModuleResolverConfig,
-		fileSystem: FileSystem,
-		flags: Partial<TypescriptModuleResolverFlags> = {},
-		extensions: string[] = EXTENSIONS,
-	) {
-		this.fs = fileSystem;
+	constructor(config: TypescriptModuleResolverConfig) {
+		this.fs = config.fileSystem;
 		this.absoluteBaseUrl = config.absoluteBaseUrl;
 		this.paths = config.paths ?? {};
-		this.extensions = extensions;
-		this.flags = { ...DEFAULT_FLAGS, ...flags };
+		this.extensions = config.extensions ?? DEFAULT_EXTENSIONS;
+		this.flags = { ...DEFAULT_FLAGS, ...config.flags };
 
 		this.resolvedAbsolutePathsMap = [];
 		for (const pathAlias in this.paths) {
 			const reolvedPaths = [];
 			for (const pathEntry of this.paths[pathAlias]) {
-				reolvedPaths.push(path.join(
+				reolvedPaths.push(joinpath(
 					this.absoluteBaseUrl,
 					pathEntry.replace(PATH_MAPPING_EXTENSION_REGEX, '')
 				));
@@ -99,7 +110,7 @@ export class TypescriptModuleResolver {
 	}
 
 	private async resolveRelativeModule(relativeModule: string, importerAbsolutePath: string): Promise<string | null> {
-		const module = path.join(importerAbsolutePath, '..', relativeModule);
+		const module = joinpath(importerAbsolutePath, '..', relativeModule);
 		return this.resolveLookups(module);
 	}
 
@@ -109,13 +120,13 @@ export class TypescriptModuleResolver {
 
 			const relativePathFromAlias = absoluteModule.substring(prefix.length);
 			for (const resolvedAliasPath of absolutePaths) {
-				const module = path.join(resolvedAliasPath, relativePathFromAlias);
+				const module = joinpath(resolvedAliasPath, relativePathFromAlias);
 				const filePath = await this.resolveLookups(module);
 				if (filePath) return filePath;
 			}
 		}
 
-		const absoluteModuleFromBaseUrl = path.join(this.absoluteBaseUrl, absoluteModule);
+		const absoluteModuleFromBaseUrl = joinpath(this.absoluteBaseUrl, absoluteModule);
 		const filePath = await this.resolveLookups(absoluteModuleFromBaseUrl);
 		if (filePath) return filePath;
 
@@ -127,14 +138,14 @@ export class TypescriptModuleResolver {
 		const filePath = await this.verifyExtensions(absoluteModule);
 		if (filePath) return filePath;
 
-		const packageJsonPath = path.join(absoluteModule, 'package.json');
+		const packageJsonPath = joinpath(absoluteModule, 'package.json');
 		const content = await loadPackageJson(packageJsonPath, this.fs);
 		if (content) {
 			const relativeFilePath = this.getPackageJsonProperties(content);
-			if (relativeFilePath) return path.join(absoluteModule, relativeFilePath);
+			if (relativeFilePath) return joinpath(absoluteModule, relativeFilePath);
 		}
 
-		const indexFilePath = await this.verifyExtensions(path.join(absoluteModule, 'index'));
+		const indexFilePath = await this.verifyExtensions(joinpath(absoluteModule, 'index'));
 		if (indexFilePath) return indexFilePath;
 
 		return null;

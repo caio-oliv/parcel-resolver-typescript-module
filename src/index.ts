@@ -1,6 +1,6 @@
+import { join as joinpath } from 'node:path';
 import { Resolver } from '@parcel/plugin';
 import { ResolveResult } from '@parcel/types';
-import { createTsModuleResolverConfig } from 'resolver/utils';
 import { TypescriptModuleResolver } from 'resolver/TypescriptModuleResolver';
 import { RecordFS } from 'fs/RecordFS';
 import { readTsconfig } from 'readTsconfig';
@@ -15,14 +15,14 @@ export default new Resolver({
 		logger.info({ message: `Resolving module (${specifierType}) "${specifier}" from "${resolveFrom}"` });
 
 		const { compilerOptions } = await readTsconfig(projectRoot, 'tsconfig.json', recordFS);
-		const config = createTsModuleResolverConfig(
-			projectRoot,
-			compilerOptions?.baseUrl,
-			compilerOptions?.paths
-		);
 
-		const resolver = new TypescriptModuleResolver(config, recordFS, {
-			verifyModuleExtension: true
+		const resolver = new TypescriptModuleResolver({
+			absoluteBaseUrl: joinpath(projectRoot, compilerOptions?.baseUrl ?? ''),
+			paths: compilerOptions?.paths ?? {},
+			flags: {
+				verifyModuleExtension: true
+			},
+			fileSystem: recordFS,
 		});
 
 		const resolved = await resolver.resolve(specifier, resolveFrom);

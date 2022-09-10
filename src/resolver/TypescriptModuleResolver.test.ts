@@ -29,7 +29,8 @@ describe('TypescriptModuleResolver basic', () => {
 			'@pathMapping/*': ['pathMapping/nested/*'],
 			'@staticPathMapping': ['staticPathMapping/nested/static'],
 		},
-	}, fsMock);
+		fileSystem: fsMock
+	});
 
 	it('not resolve path mapping with extension', async () => {
 		await assertResolver(
@@ -143,6 +144,7 @@ describe('TypescriptModuleResolver absolute modules', () => {
 		[fakePath('src/config/env.ts'), null],
 		[fakePath('src/config/PageNotFound.tsx'), null],
 		[fakePath('src/modules/auth/module.ts'), null],
+		[fakePath('src/modules/auth/domain/index.ts'), null],
 		[fakePath('src/modules/auth/domain/entity/User.ts'), null],
 		[fakePath('src/modules/auth/infra/repositories/UserRepository.ts'), null],
 		[fakePath('src/modules/auth/app/UserUseCases/CreateUser.ts'), null],
@@ -154,7 +156,8 @@ describe('TypescriptModuleResolver absolute modules', () => {
 			'@config/*': ['config/*', 'config/database/*'],
 			'@auth/*': ['modules/auth/*'],
 		},
-	}, fsMock);
+		fileSystem: fsMock
+	});
 
 	it('resolve module from path mapping', async () => {
 		await assertResolver(
@@ -178,51 +181,77 @@ describe('TypescriptModuleResolver absolute modules', () => {
 			null
 		);
 
-		{
-			const modulePath = await resolver.resolve('@config/database/sqlite', fakePath('src/app.ts'));
-			expect(modulePath).toBe(fakePath('src/config/database/sqlite.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve('@config/sqlite', fakePath('src/main.ts'));
-			expect(modulePath).toBe(fakePath('src/config/database/sqlite.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve('@config/cloud/aws', fakePath('src/app.ts'));
-			expect(modulePath).toBe(fakePath('src/config/cloud/aws.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve('@config/env', fakePath('src/main.ts'));
-			expect(modulePath).toBe(fakePath('src/config/env.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve('@auth/module', fakePath('src/app.ts'));
-			expect(modulePath).toBe(fakePath('src/modules/auth/module.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve('@auth/domain/entity/User', fakePath('src/modules/auth/module.ts'));
-			expect(modulePath).toBe(fakePath('src/modules/auth/domain/entity/User.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve(
-				'@auth/infra/repositories/UserRepository',
-				fakePath('src/modules/auth/module.ts')
-			);
-			expect(modulePath).toBe(fakePath('src/modules/auth/infra/repositories/UserRepository.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve(
-				'@auth/app/UserUseCases/CreateUser',
-				fakePath('src/modules/auth/module.ts')
-			);
-			expect(modulePath).toBe(fakePath('src/modules/auth/app/UserUseCases/CreateUser.ts'));
-		}
-		{
-			const modulePath = await resolver.resolve(
-				'@config/database/postgres',
-				fakePath('src/modules/auth/infra/repositories/UserRepository.ts')
-			);
-			expect(modulePath).toBe(fakePath('src/config/database/postgres.ts'));
-		}
+		await assertResolver(
+			resolver,
+			fakePath('src/app.ts'),
+			'@config/database/sqlite',
+			fakePath('src/config/database/sqlite.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'@config/sqlite',
+			fakePath('src/config/database/sqlite.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/app.ts'),
+			'@config/cloud/aws',
+			fakePath('src/config/cloud/aws.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'@config/env',
+			fakePath('src/config/env.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/app.ts'),
+			'@auth/module',
+			fakePath('src/modules/auth/module.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/modules/auth/module.ts'),
+			'@auth/domain/entity/User',
+			fakePath('src/modules/auth/domain/entity/User.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/modules/auth/module.ts'),
+			'@auth/infra/repositories/UserRepository',
+			fakePath('src/modules/auth/infra/repositories/UserRepository.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/modules/auth/module.ts'),
+			'@auth/app/UserUseCases/CreateUser',
+			fakePath('src/modules/auth/app/UserUseCases/CreateUser.ts')
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('src/modules/auth/infra/repositories/UserRepository.ts'),
+			'@config/database/postgres',
+			fakePath('src/config/database/postgres.ts')
+		);
+	});
+
+	it('resolve index module in auth path mapping', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/app.ts'),
+			'@auth/domain',
+			fakePath('src/modules/auth/domain/index.ts')
+		);
 	});
 
 });
@@ -230,37 +259,23 @@ describe('TypescriptModuleResolver absolute modules', () => {
 describe('TypescriptModuleResolver relative modules', () => {
 
 	const fsMock = new FileSystemMock(new Map([
-		[fakePath('src/app.ts'), null],
+		[fakePath('src/main.ts'), null],
 		[fakePath('src/components/Button.tsx'), null],
 		[fakePath('src/components/Text/index.ts'), null],
 		[fakePath('src/components/Text/styles.ts'), null],
-		[fakePath('src/main.ts'), null]
 	]));
 
 	const resolver = new TypescriptModuleResolver({
 		absoluteBaseUrl: fakePath(''),
-	}, fsMock);
+		fileSystem: fsMock,
+	});
 
 	it('resolve relative modules', async () => {
 		await assertResolver(
 			resolver,
 			fakePath('src/main.ts'),
-			'./app',
-			fakePath('src/app.ts')
-		);
-
-		await assertResolver(
-			resolver,
-			fakePath('src/app.ts'),
 			'./components/Button',
 			fakePath('src/components/Button.tsx')
-		);
-
-		await assertResolver(
-			resolver,
-			fakePath('src/app.ts'),
-			'./components/Text',
-			fakePath('src/components/Text/index.ts')
 		);
 
 		await assertResolver(
@@ -270,6 +285,15 @@ describe('TypescriptModuleResolver relative modules', () => {
 			fakePath('src/components/Text/styles.ts')
 		);
 	});
+
+	it('resolve relative index module', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'./components/Text',
+			fakePath('src/components/Text/index.ts')
+		);
+	})
 
 });
 
@@ -312,7 +336,8 @@ describe('TypescriptModuleResolver package.json', () => {
 		paths: {
 			'@shared/*': ['shared/*'],
 		},
-	}, fsMock);
+		fileSystem: fsMock,
+	});
 
 	it('resolve module in types property from package.json', async () => {
 		await assertResolver(

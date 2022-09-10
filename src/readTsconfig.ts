@@ -1,4 +1,4 @@
-import deepmerge from "deepmerge";
+import { default as deepmerge } from "deepmerge";
 import { join as joinpath, dirname, relative as relativepath } from 'node:path';
 import { FileSystem, Tsconfig } from "types";
 
