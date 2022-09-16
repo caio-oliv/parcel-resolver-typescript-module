@@ -1,6 +1,6 @@
-import { default as deepmerge } from "deepmerge";
+import { default as deepmerge } from 'deepmerge';
 import { join as joinpath, dirname, relative as relativepath } from 'node:path';
-import { FileSystem, Tsconfig } from "types";
+import { FileSystem, Tsconfig } from 'types';
 
 
 export async function readTsconfig(projectRoot: string, tsconfigFilename: string, fs: FileSystem): Promise<Tsconfig> {
@@ -23,7 +23,7 @@ async function loadAndParse(tsconfigPath: string, fs: FileSystem): Promise<Tscon
 	const tsConfigContent = await fs.readFile(tsconfigPath, 'utf8');
 
 	try {
-		const tsconfig: Tsconfig = JSON.parse(tsConfigContent) ?? {};
+		const tsconfig: Tsconfig = JSON.parse(tsConfigContent);
 		return tsconfig;
 	} catch (err) {
 		throw new TsConfigError(TsConfigErrorKind.InvalidJson, err);
@@ -56,11 +56,11 @@ export enum TsConfigErrorKind {
 
 export class TsConfigError extends Error {
 	public readonly kind: TsConfigErrorKind;
-	public readonly base: unknown | null;
+	public readonly cause: unknown | null;
 
-	constructor(kind: TsConfigErrorKind, base?: unknown) {
+	constructor(kind: TsConfigErrorKind, cause: unknown = null) {
 		super(`Ts config error ${kind}`);
 		this.kind = kind;
-		this.base = base ?? null;
+		this.cause = cause;
 	}
 }

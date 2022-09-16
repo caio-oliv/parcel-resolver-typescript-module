@@ -1,7 +1,7 @@
-import { join as joinpath } from "node:path";
-import { loadPackageJson, PackageJson } from "packageJsonLoader";
-import { FileSystem } from "types";
-import { moduleHasExtension, relativeModule } from "./utils";
+import { join as joinpath } from 'node:path';
+import { loadPackageJson } from 'packageJsonLoader';
+import { FileSystem, PackageJson } from 'types';
+import { moduleHasExtension, relativeModule } from 'resolver/utils';
 
 
 export type TsconfigPaths = Record<string, string[]>;

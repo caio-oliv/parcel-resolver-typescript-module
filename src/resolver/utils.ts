@@ -1,4 +1,4 @@
-import { sep as separator } from "node:path";
+import { sep as separator } from 'node:path';
 
 
 /**

@@ -34,7 +34,7 @@ export default new Resolver({
 		logger.info({ message: `Module "${specifier}" resolved: ${resolved}` });
 		return {
 			filePath: resolved,
-			invalidateOnFileChange: recordFS.read,
+			invalidateOnFileChange: recordFS.allExistentKnownFiles,
 		};
 	},
 });

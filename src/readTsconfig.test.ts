@@ -1,5 +1,5 @@
 import { FileSystemMock } from 'fs/FileSystem.mock';
-import { readTsconfig } from 'readTsconfig';
+import { readTsconfig, TsConfigError } from 'readTsconfig';
 import { fakePath } from 'testUtils.mock';
 import { Tsconfig } from 'types';
 
@@ -137,6 +137,16 @@ describe('read tsconfig file', () => {
 				'**/*.test.ts',
 			]
 		});
+	});
+
+	it('throw an TsConfigError loading a invalid tsconfig.json file', async () => {
+		const mockFS = new FileSystemMock(new Map([
+			[fakePath('tsconfig.json'), Buffer.from('{"compilerOptions":{"outDir":"./dist",},}')]
+		]))
+
+		await expect(() => readTsconfig(fakePath(), 'tsconfig.json', mockFS))
+			.rejects
+			.toThrowError(TsConfigError);
 	});
 
 });

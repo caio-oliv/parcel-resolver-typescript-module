@@ -6,6 +6,15 @@ export interface FileSystem {
   readFile(filePath: string, encoding?: Encoding): Promise<string>;
 }
 
+export type PackageType = 'commonjs' | 'module';
+
+export interface PackageJson {
+  type?: PackageType;
+  types?: string;
+  main?: string;
+  module?: string;
+}
+
 export interface Tsconfig {
   extends?: string;
   compilerOptions?: {

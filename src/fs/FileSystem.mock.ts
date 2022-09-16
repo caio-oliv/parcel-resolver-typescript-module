@@ -1,5 +1,5 @@
 import { join as joinpath, sep as separator } from 'node:path';
-import { Encoding, FileSystem } from "types";
+import { Encoding, FileSystem } from 'types';
 
 type FsTree = Map<string, Buffer | null>;
 

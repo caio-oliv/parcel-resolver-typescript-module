@@ -1,4 +1,4 @@
-import { moduleHasExtension, relativeModule } from "./utils";
+import { moduleHasExtension, relativeModule } from 'resolver/utils';
 
 
 describe('TypescriptModuleResolver utils', () => {

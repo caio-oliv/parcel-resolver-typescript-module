@@ -1,5 +1,5 @@
-import { FileSystemMock } from "fs/FileSystem.mock";
-import { TypescriptModuleResolver } from "./TypescriptModuleResolver";
+import { FileSystemMock } from 'fs/FileSystem.mock';
+import { TypescriptModuleResolver } from 'resolver/TypescriptModuleResolver';
 import { fakePath } from 'testUtils.mock';
 
 
