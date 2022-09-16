@@ -1,4 +1,4 @@
-import { join as joinpath } from 'node:path';
+import { join as joinpath, sep as separator } from 'node:path';
 import { loadPackageJson } from 'packageJsonLoader';
 import { FileSystem, PackageJson } from 'types';
 import { moduleHasExtension, relativeModule } from 'resolver/utils';
@@ -44,7 +44,7 @@ export interface TypescriptModuleResolverConfig {
 	extensions?: string[];
 
 	/** Custom flags to modify resolver behaviour */
-	flags?: TypescriptModuleResolverFlags;
+	flags?: Partial<TypescriptModuleResolverFlags>;
 
 	/** Resolver file system */
 	fileSystem: FileSystem,
@@ -56,16 +56,12 @@ interface PathAlias {
 }
 
 const DEFAULT_FLAGS: TypescriptModuleResolverFlags = {
-	verifyModuleExtension: false
+	verifyModuleExtension: false,
 };
 
-const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
+const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.js', '.d.ts'];
 
 const PATH_MAPPING_EXTENSION_REGEX = /\*$/
-
-// TODO: implement node_modules resolution jumping up directories
-// https://www.typescriptlang.org/docs/handbook/module-resolution.html#how-nodejs-resolves-modules
-// https://nodejs.org/api/modules.html#modules_loading_from_node_modules_folders
 
 export class TypescriptModuleResolver {
 	private readonly fs: FileSystem;
@@ -99,22 +95,22 @@ export class TypescriptModuleResolver {
 		}
 	}
 
-	public async resolve(module: string, importerAbsolutePath?: string | null): Promise<string | null> {
+	public async resolve(module: string, sourceAbsolutePath: string | null = null): Promise<string | null> {
 		if (relativeModule(module)) {
-			if (!importerAbsolutePath) return null;
+			if (!sourceAbsolutePath) return null;
 
-			return this.resolveRelativeModule(module, importerAbsolutePath);
+			return this.resolveRelativeModule(module, sourceAbsolutePath);
 		}
 
-		return this.resolveAbsoluteModule(module);
+		return this.resolveAbsoluteModule(module, sourceAbsolutePath);
 	}
 
-	private async resolveRelativeModule(relativeModule: string, importerAbsolutePath: string): Promise<string | null> {
-		const module = joinpath(importerAbsolutePath, '..', relativeModule);
+	private async resolveRelativeModule(relativeModule: string, sourceAbsolutePath: string): Promise<string | null> {
+		const module = joinpath(sourceAbsolutePath, '..', relativeModule);
 		return this.resolveLookups(module);
 	}
 
-	private async resolveAbsoluteModule(absoluteModule: string): Promise<string | null> {
+	private async resolveAbsoluteModule(absoluteModule: string, sourceAbsolutePath: string | null): Promise<string | null> {
 		for (const { prefix, absolutePaths } of this.resolvedAbsolutePathsMap) {
 			if (!absoluteModule.startsWith(prefix)) continue;
 
@@ -130,9 +126,23 @@ export class TypescriptModuleResolver {
 		const filePath = await this.resolveLookups(absoluteModuleFromBaseUrl);
 		if (filePath) return filePath;
 
-		return null;
+		if (!sourceAbsolutePath) return null;
+		return this.resolveFromNodeModules(absoluteModule, sourceAbsolutePath);
 	}
 
+	private async resolveFromNodeModules(module: string, sourceAbsolutePath: string): Promise<string | null> {
+		let nodeModulesPath = sourceAbsolutePath;
+		do {
+			nodeModulesPath = joinpath(nodeModulesPath, '..', 'node_modules');
+			const modulepath = joinpath(nodeModulesPath, module);
+
+			const found = await this.resolveLookups(modulepath);
+			if (found) return found;
+
+			nodeModulesPath = joinpath(nodeModulesPath, '..');
+		} while (nodeModulesPath !== separator);
+		return null;
+	}
 
 	private async resolveLookups(absoluteModule: string): Promise<string | null> {
 		const filePath = await this.verifyExtensions(absoluteModule);
@@ -168,9 +178,9 @@ export class TypescriptModuleResolver {
 	}
 
 	private getPackageJsonProperties(packageObj: PackageJson): string | null {
-		if (packageObj.types) return packageObj.types;
 		if (packageObj.module) return packageObj.module;
 		if (packageObj.main) return packageObj.main;
+		if (packageObj.types) return packageObj.types;
 		return null;
 	}
 

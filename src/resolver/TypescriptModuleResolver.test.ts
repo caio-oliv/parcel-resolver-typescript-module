@@ -308,22 +308,22 @@ describe('TypescriptModuleResolver package.json', () => {
 		[fakePath('package/back/dist/module.js'), null],
 		[fakePath('package/back/dist/main.js'), null],
 		[fakePath('package/back/package.json'), Buffer.from(JSON.stringify({
-			types: 'dist/types.d.ts',
 			module: 'dist/module.js',
 			main: 'dist/main.js',
+			types: 'dist/types.d.ts',
 		}))],
 
 		[fakePath('package/shared/types.ts'), null],
-		[fakePath('package/shared/dist/module.js'), null],
+		[fakePath('package/shared/dist/types.d.ts'), null],
 		[fakePath('package/shared/dist/main.js'), null],
 		[fakePath('package/shared/package.json'), Buffer.from(JSON.stringify({
-			module: 'dist/module.js',
 			main: 'dist/main.js',
+			types: 'dist/types.d.ts',
 		}))],
 
-		[fakePath('package/common/dist/main.js'), null],
+		[fakePath('package/common/dist/types.d.ts'), null],
 		[fakePath('package/common/package.json'), Buffer.from(JSON.stringify({
-			main: 'dist/main.js',
+			types: 'dist/types.d.ts',
 		}))],
 
 		[fakePath('package/broken/package.json'), Buffer.from(JSON.stringify({
@@ -333,73 +333,54 @@ describe('TypescriptModuleResolver package.json', () => {
 
 	const resolver = new TypescriptModuleResolver({
 		absoluteBaseUrl: fakePath('package'),
-		paths: {
-			'@shared/*': ['shared/*'],
-		},
 		fileSystem: fsMock,
 	});
 
-	it('resolve module in types property from package.json', async () => {
+	it('resolve module in "module" property from package.json', async () => {
 		await assertResolver(
 			resolver,
 			fakePath('package/front/app.ts'),
 			'back',
-			fakePath('package/back/dist/types.d.ts')
+			fakePath('package/back/dist/module.js')
 		);
 
 		await assertResolver(
 			resolver,
 			fakePath('package/front/app.ts'),
 			'../back',
-			fakePath('package/back/dist/types.d.ts')
+			fakePath('package/back/dist/module.js')
 		);
 	});
 
-	it('fallback to module property when types in shared package is not found', async () => {
+	it('fallback to "main" property when "module" in shared package is not found', async () => {
 		await assertResolver(
 			resolver,
 			fakePath('package/front/app.ts'),
 			'shared',
-			fakePath('package/shared/dist/module.js')
+			fakePath('package/shared/dist/main.js')
 		);
 
 		await assertResolver(
 			resolver,
 			fakePath('package/front/main.ts'),
 			'../shared',
-			fakePath('package/shared/dist/module.js')
+			fakePath('package/shared/dist/main.js')
 		);
 	});
 
-	it('resolve module in shared package', async () => {
-		await assertResolver(
-			resolver,
-			fakePath('package/back/main.ts'),
-			'shared/types',
-			fakePath('package/shared/types.ts')
-		);
-
-		await assertResolver(
-			resolver,
-			fakePath('package/back/main.ts'),
-			'@shared/types',
-			fakePath('package/shared/types.ts')
-		);
-	})
-
-	it('fallback to main property when module in common package is not found', async () => {
+	it('fallback to "types" property when "main" in common package is not found', async () => {
 		await assertResolver(
 			resolver,
 			fakePath('package/back/main.ts'),
 			'common',
-			fakePath('package/common/dist/main.js')
+			fakePath('package/common/dist/types.d.ts')
 		);
 
 		await assertResolver(
 			resolver,
 			fakePath('package/back/main.ts'),
 			'../common',
-			fakePath('package/common/dist/main.js')
+			fakePath('package/common/dist/types.d.ts')
 		);
 	});
 
@@ -593,4 +574,89 @@ describe('TypescriptModuleResolver custom extension', () => {
 
 });
 
-// TEST: node_modules
+describe('TypescriptModuleResolver node_modules', () => {
+
+	const fsMock = new FileSystemMock(new Map([
+		['/home/node/repos/projname/src/main.ts', null],
+		['/home/node/repos/projname/src/server.ts', null],
+		['/home/node/repos/projname/node_modules/express/package.json', Buffer.from(JSON.stringify({
+			module: 'dist/module.js',
+			main: 'dist/main.js',
+		}))],
+		['/home/node/repos/projname/node_modules/prisma/index.js', null],
+		['/home/node/repos/projname/node_modules/joi.js', null],
+		['/home/node/node_modules/inhome/package.json', Buffer.from(JSON.stringify({
+			module: 'dist/module.js',
+		}))],
+		['/node_modules/inroot/index.ts', null],
+	]));
+
+	const resolver = new TypescriptModuleResolver({
+		absoluteBaseUrl: '/home/node/repos/projname/src',
+		fileSystem: fsMock,
+	});
+
+	it('resolve express module in project node_modules', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/main.ts',
+			'express',
+			'/home/node/repos/projname/node_modules/express/dist/module.js',
+		);
+	});
+
+	it('resolve prisma module in project node_modules', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/server.ts',
+			'prisma',
+			'/home/node/repos/projname/node_modules/prisma/index.js',
+		);
+	});
+
+	it('resolve prisma module in project node_modules', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/main.ts',
+			'prisma',
+			'/home/node/repos/projname/node_modules/prisma/index.js',
+		);
+	});
+
+	it('resolve joi module in project node_modules', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/server.ts',
+			'joi',
+			'/home/node/repos/projname/node_modules/joi.js',
+		);
+	});
+
+	it('resolve "inhome" module in home node_modules', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/server.ts',
+			'inhome',
+			'/home/node/node_modules/inhome/dist/module.js',
+		);
+	});
+
+	it('resolve "inroot" module in root node_modules', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/main.ts',
+			'inroot',
+			'/node_modules/inroot/index.ts',
+		);
+	});
+
+	it('not resolve "unknown-module" module', async () => {
+		await assertResolver(
+			resolver,
+			'/home/node/repos/projname/src/main.ts',
+			'unknown-module',
+			null,
+		);
+	});
+
+});
