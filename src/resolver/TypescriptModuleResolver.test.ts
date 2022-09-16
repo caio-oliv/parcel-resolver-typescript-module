@@ -421,4 +421,176 @@ describe('TypescriptModuleResolver package.json', () => {
 
 });
 
-// TEST: flags, custom extension and node_modules
+describe('TypescriptModuleResolver flags', () => {
+
+	const fsMock = new FileSystemMock(new Map([
+		[fakePath('src/main.ts'), null],
+		[fakePath('src/app.tsx'), null],
+		[fakePath('src/component/Button/index.ts'), null],
+		[fakePath('src/component/Button/Button.tsx'), null],
+		[fakePath('src/component/Button/Button.module.css'), null],
+	]));
+
+	const resolver = new TypescriptModuleResolver({
+		absoluteBaseUrl: fakePath('src'),
+		paths: {
+			'@component/*': ['component/*'],
+		},
+		flags: {
+			verifyModuleExtension: true,
+		},
+		fileSystem: fsMock,
+	});
+
+	it('resolve relative module with extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/component/Button/index.ts'),
+			'./Button.tsx',
+			fakePath('src/component/Button/Button.tsx'),
+		);
+	});
+
+	it('resolve relative module with not supported extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/component/Button/Button.tsx'),
+			'./Button.module.css',
+			fakePath('src/component/Button/Button.module.css'),
+		);
+	});
+
+	it('not resolve relative module with wrong extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/component/Button/index.ts'),
+			'./Button.ts',
+			null,
+		);
+	});
+
+	it('resolve baseUrl module with extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'app.tsx',
+			fakePath('src/app.tsx')
+		);
+	});
+
+	it('not resolve baseUrl module with wrong extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/main.ts'),
+			'app.ts',
+			null
+		);
+	});
+
+	it('resolve path mapping module with extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/app.tsx'),
+			'@component/Button/Button.tsx',
+			fakePath('src/component/Button/Button.tsx'),
+		);
+	});
+
+	it('not resolve path mapping module with wrong extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/app.tsx'),
+			'@component/Button/Button.html',
+			null,
+		);
+	});
+
+	it('resolve baseUrl index module with extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('src/app.tsx'),
+			'component/Button',
+			fakePath('src/component/Button/index.ts'),
+		);
+	});
+});
+
+describe('TypescriptModuleResolver custom extension', () => {
+
+	const fsMock = new FileSystemMock(new Map([
+		[fakePath('projects/backend/src/main.ts'), null],
+		[fakePath('projects/backend/src/server.ts'), null],
+		[fakePath('projects/backend/src/page/404.tsx'), null],
+		[fakePath('projects/backend/src/@types/ExpressExtension.d.ts'), null],
+
+		[fakePath('projects/libs/validation/src/lib.rs'), null],
+		[fakePath('projects/libs/validation/dist/types.d.ts'), null],
+		[fakePath('projects/libs/validation/dist/oxid.wasm'), null],
+		[fakePath('projects/libs/validation/dist/oxid.native.so'), null],
+	]));
+
+	const resolver = new TypescriptModuleResolver({
+		absoluteBaseUrl: fakePath('projects'),
+		paths: {
+			'@back/*': ['backend/src/*'],
+			'lib.validation/*': ['libs/validation/src/*', 'libs/validation/dist/*'],
+		},
+		extensions: ['.ts', '.tsx', '.d.ts', '.rs', '.wasm'],
+		fileSystem: fsMock,
+	});
+
+	it('resolve relative module', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('projects/backend/src/main.ts'),
+			'./server',
+			fakePath('projects/backend/src/server.ts'),
+		);
+	});
+
+	it('resolve path mapping relative module', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('projects/backend/src/main.ts'),
+			'@back/page/404',
+			fakePath('projects/backend/src/page/404.tsx'),
+		);
+	});
+
+	it('resolve baseUrl module', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('projects/backend/src/main.ts'),
+			'backend/src/@types/ExpressExtension',
+			fakePath('projects/backend/src/@types/ExpressExtension.d.ts'),
+		);
+	});
+
+	it('resolve baseUrl module with custom extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('projects/backend/src/main.ts'),
+			'lib.validation/oxid',
+			fakePath('projects/libs/validation/dist/oxid.wasm'),
+		);
+
+		await assertResolver(
+			resolver,
+			fakePath('projects/backend/src/main.ts'),
+			'lib.validation/lib',
+			fakePath('projects/libs/validation/src/lib.rs'),
+		);
+	});
+
+	it('resolve baseUrl module with unspecified custom extension', async () => {
+		await assertResolver(
+			resolver,
+			fakePath('projects/backend/src/main.ts'),
+			'lib.validation/oxid.native',
+			null,
+		);
+	});
+
+});
+
+// TEST: node_modules
