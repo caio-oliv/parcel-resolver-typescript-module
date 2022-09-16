@@ -6,7 +6,7 @@ Parcel resolver for [typescript modules](https://www.typescriptlang.org/docs/han
 
 - [x] [baseUrl](https://www.typescriptlang.org/docs/handbook/module-resolution.html#base-url)
 - [x] [pathMapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping)
-- [ ] node_modules
+- [x] [node_modules](https://www.typescriptlang.org/docs/handbook/module-resolution.html#how-typescript-resolves-modules)
 - [ ] [URL schemes](https://parceljs.org/features/dependency-resolution/#url-schemes)
 
 ## Usage

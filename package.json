@@ -16,7 +16,7 @@
     "type": "git",
     "url": "https://github.com/CaioOliveira793/parcel-resolver-typescript-module"
   },
-  "version": "0.1.7",
+  "version": "0.1.8",
   "source": "src/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
