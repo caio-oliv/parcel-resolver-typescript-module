@@ -59,6 +59,7 @@ export class TsConfigError extends Error {
 	public readonly cause: unknown | null;
 
 	constructor(kind: TsConfigErrorKind, cause: unknown = null) {
+		// TODO: better error message.
 		super(`Ts config error ${kind}`);
 		this.kind = kind;
 		this.cause = cause;
