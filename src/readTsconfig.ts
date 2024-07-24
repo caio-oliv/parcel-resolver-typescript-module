@@ -1,5 +1,6 @@
-import { default as deepmerge } from 'deepmerge';
 import { join as joinpath, dirname, relative as relativepath } from 'node:path';
+import JSON5 from 'json5';
+import { default as deepmerge } from 'deepmerge';
 import { FileSystem, Tsconfig } from 'types';
 
 
@@ -23,7 +24,7 @@ async function loadAndParse(tsconfigPath: string, fs: FileSystem): Promise<Tscon
 	const tsConfigContent = await fs.readFile(tsconfigPath, 'utf8');
 
 	try {
-		const tsconfig: Tsconfig = JSON.parse(tsConfigContent);
+		const tsconfig: Tsconfig = JSON5.parse(tsConfigContent);
 		return tsconfig;
 	} catch (err) {
 		throw new TsConfigError(TsConfigErrorKind.InvalidJson, err);

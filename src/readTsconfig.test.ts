@@ -139,9 +139,35 @@ describe('read tsconfig file', () => {
 		});
 	});
 
+	it('load a JSON5 tsconfig.json file', async () => {
+		const tsconfigContent = [
+			'{',
+			'  "compilerOptions": {',
+			'    // line comments',
+			'    "outDir": "./dist",',
+			'    // trailing comma',
+			'    "baseUrl": "../src", // more comments',
+			'  },',
+			'}'
+		].join('\n');
+
+		const mockFS = new FileSystemMock(new Map([
+			[fakePath('tsconfig.json'), Buffer.from(tsconfigContent)]
+		]));
+
+		const tsconfigObj = await readTsconfig(fakePath(), 'tsconfig.json', mockFS);
+
+		expect(tsconfigObj).toStrictEqual({
+			compilerOptions: {
+				outDir: "./dist",
+				baseUrl: '../src'
+			},
+		});
+	});
+
 	it('throw an TsConfigError loading a invalid tsconfig.json file', async () => {
 		const mockFS = new FileSystemMock(new Map([
-			[fakePath('tsconfig.json'), Buffer.from('{"compilerOptions":{"outDir":"./dist",},}')]
+			[fakePath('tsconfig.json'), Buffer.from('{compilerOptions={"outDir":"./dist",},}')]
 		]))
 
 		await expect(() => readTsconfig(fakePath(), 'tsconfig.json', mockFS))

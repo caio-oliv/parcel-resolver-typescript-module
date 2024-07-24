@@ -14,13 +14,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/CaioOliveira793/parcel-resolver-typescript-module"
+    "url": "https://github.com/caio-oliv/parcel-resolver-typescript-module"
   },
-  "version": "0.1.8",
+  "version": "0.1.9",
   "source": "src/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
-  "packageManager": "pnpm@7.9.0",
+  "packageManager": "pnpm@9.5.0",
   "scripts": {
     "clear": "rm -rf dist/* coverage/*",
     "build": "parcel build",
@@ -45,7 +45,8 @@
     "typescript": "^4.8.3"
   },
   "dependencies": {
-    "deepmerge": "^4.2.2"
+    "deepmerge": "^4.2.2",
+    "json5": "^2.2.3"
   },
   "peerDependencies": {
     "@parcel/plugin": "^2.5.0",

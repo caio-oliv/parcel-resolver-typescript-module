@@ -14,7 +14,10 @@
     "sourceMap": true,
     "rootDir": "./",
     "baseUrl": "src",
-    "paths": {},
+    "paths": {
+      "@test/*": ["./../test/*"],
+      "@lib/*": ["./*"]
+    },
     "outDir": "./dist",
     "isolatedModules": false,
     "resolveJsonModule": true,
